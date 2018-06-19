@@ -154,63 +154,6 @@ svc = svm.SVC(kernel='linear', C=C, decision_function_shape='ovr').fit(x_train, 
 Z = svc.predict(X_plot)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-=======
-
-def nmae(y_real, y_predict):
-
-    #Reset Panda Data frame settings
-    y_real = pd.DataFrame(y_real)
-    y_predict = pd.DataFrame(y_predict)
-
-    
-    #Loop - Variables Initializing
-    somatorio = 0.0
-    m = 0
-    media = 0
-    nmae_resultado = 0
-    for m in range(len(y_real)):
-        somatorio += abs((y_real.iloc[m][0] - y_predict.iloc[m]))
-        m += 1
-
-    #Final adjustments
-    media = y_real.iloc[:, y_real.columns == "class"].astype(float).mean()
-    media = media[0]
-    somatorio = somatorio[0]
-
-
-    #N. M. A. E. Accuracy Measures
-    nmae_resultado = (somatorio/m)/media
-
-    return nmae_resultado
-
-
 #Preparing X and Y to be trained
 df = pd.read_csv('/home/rodrigo/MPLS-TE/Data-Set/cic-unb/merged_5s.csv')
 x = df.iloc[:,0:28]
@@ -247,5 +190,5 @@ print("Accuracy of the Classifier C = %.3f" % metrics.accuracy_score(y_test, y_p
 
 #Regression Method
 print("The Normalized Mean Absolute Error (Regression Method): %0.4f " % nmae(y_test, y_pred))
->>>>>>> branch 'master' of https://github.com/romoreira/OrchestratorExtension.git
->>>>>>> 24d3369e7d5a14a799c959c9d2927b91574e9593
+
+
