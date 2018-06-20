@@ -23,6 +23,9 @@ from sklearn.utils.validation import column_or_1d
 from sklearn import metrics
 from sklearn import svm, datasets
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.multiclass import OneVsOneClassifier
+from sklearn.svm import LinearSVC
 
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
 #Functions - NMAE
@@ -177,7 +180,7 @@ print("SVM: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, Z))
 
 
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
-#Network Data-set by considering all features
+#SVM - Network Data-set by considering all features
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
 
 #Preparing X and Y to be trained - 
@@ -194,27 +197,31 @@ y = df.iloc[:,29:30]
 #Data-set train test split
 x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.30)
 
-
 #Conversion into numpy array
 x_train = np.array(x_train)
 y_train = np.array(y_train)
+x_test = np.array(x_test)
+y_test = np.array(y_test)
 y_train = column_or_1d(y_train, warn=False)
 
 #Adjustments in numpy to keep big number format (without scientific notation)
 np.set_printoptions(suppress=False,formatter={'float_kind':'{:16.5f}'.format},linewidth=130)
 
+y_pred = OneVsRestClassifier(LinearSVC(C=100.)).fit(x_train, y_train).predict(x_test)
+y_pred2 = OneVsOneClassifier(LinearSVC(C=100.)).fit(x_train, y_train).predict(x_test)
+
+print("\nLarge Data:\nSVM: Accuracy of the Classifier C = %.3f " % metrics.accuracy_score(y_test, y_pred))
+print("\nLarge Data:\nSVM2: Accuracy of the Classifier C = %.3f " % metrics.accuracy_score(y_test, y_pred2))
+
+
 # Create the SVC model object
 C = 1.0 # SVM regularization parameter
-svc = svm.SVC(kernel='rbf', C=C, decision_function_shape='ovr').fit(x_train, y_train)
-
-#Test using splitted data
+svc = svm.SVC(kernel='linear', C=C, decision_function_shape='ovr').fit(x_train, y_train)
 Z = svc.predict(x_test)
 
-#Print Accuracy of the Classifier (SVM)
-print("\nLarge Data:\nSVM: Accuracy of the Classifier C = %.3f" % metrics.accuracy_score(y_test, Z))
-
-#Print NAME Error measure (SVM)
-print("SVM: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, Z))
+print(Z)
+np.savetxt('svm1.txt', y_pred, delimiter=',')
+np.savetxt('svm2.txt', y_pred2, delimiter=',')
 
 
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
@@ -239,7 +246,7 @@ x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.30)
 #Conversion into numpy array
 x_train = np.array(x_train)
 y_train = np.array(y_train)
-y_test = np.array(y_test)
+#y_test = np.array(y_test)
 y_train = column_or_1d(y_train, warn=False)
 
 #Adjustments in numpy to keep big number format (without scientific notation)
@@ -250,4 +257,9 @@ neigh.fit(x_train,y_train)
 
 y_pred = neigh.predict(x_test)
 
+np.savetxt('knn.txt', y_pred, delimiter=',')
+
 print("\nLarge Data:\nKNN: Accuracy of the Classifier C = %.3f " % metrics.accuracy_score(y_test, y_pred))
+
+#Print NAME Error measure (SVM)
+print("KNN: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, y_pred))
