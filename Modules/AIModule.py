@@ -22,8 +22,11 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.utils.validation import column_or_1d
 from sklearn import metrics
 from sklearn import svm, datasets
+from sklearn.neighbors import KNeighborsClassifier
 
-
+#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
+#Functions - NMAE
+#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
 def nmae(y_real, y_predict):
 
     #Reset Panda Data frame settings
@@ -50,6 +53,11 @@ def nmae(y_real, y_predict):
     nmae_resultado = (somatorio/m)/media
 
     return nmae_resultado
+#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
+#END of Functions
+#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
+
+
 
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
 #Test using Logistic Regression
@@ -161,5 +169,85 @@ print("SVM: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, Z))
 
 
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
-#End of IRIS and Network Data-set compatisson
+#End of IRIS and Network Data-set compatissons
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
+
+
+
+
+
+#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
+#Network Data-set by considering all features
+#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
+
+#Preparing X and Y to be trained - 
+df = pd.read_csv('/home/rodrigo/MPLS-TE/Data-Set/cic-unb/merged_5s.csv')
+x = df.iloc[:,0:28]
+
+#Remove String format from training model
+x = x.iloc[:,x.columns != "Source_IP"]
+x = x.iloc[:,x.columns != "Destination_IP"]
+
+#To catch target (class of network traffic)
+y = df.iloc[:,29:30]
+
+#Data-set train test split
+x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.30)
+
+
+#Conversion into numpy array
+x_train = np.array(x_train)
+y_train = np.array(y_train)
+y_train = column_or_1d(y_train, warn=False)
+
+#Adjustments in numpy to keep big number format (without scientific notation)
+np.set_printoptions(suppress=False,formatter={'float_kind':'{:16.5f}'.format},linewidth=130)
+
+# Create the SVC model object
+C = 1.0 # SVM regularization parameter
+svc = svm.SVC(kernel='rbf', C=C, decision_function_shape='ovr').fit(x_train, y_train)
+
+#Test using splitted data
+Z = svc.predict(x_test)
+
+#Print Accuracy of the Classifier (SVM)
+print("\nLarge Data:\nSVM: Accuracy of the Classifier C = %.3f" % metrics.accuracy_score(y_test, Z))
+
+#Print NAME Error measure (SVM)
+print("SVM: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, Z))
+
+
+#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
+#KNN
+#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
+
+#Preparing X and Y to be trained - 
+df = pd.read_csv('/home/rodrigo/MPLS-TE/Data-Set/cic-unb/merged_5s.csv')
+x = df.iloc[:,0:28]
+
+#Remove String format from training model
+x = x.iloc[:,x.columns != "Source_IP"]
+x = x.iloc[:,x.columns != "Destination_IP"]
+
+#To catch target (class of network traffic)
+y = df.iloc[:,29:30]
+
+#Data-set train test split
+x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.30)
+
+
+#Conversion into numpy array
+x_train = np.array(x_train)
+y_train = np.array(y_train)
+y_test = np.array(y_test)
+y_train = column_or_1d(y_train, warn=False)
+
+#Adjustments in numpy to keep big number format (without scientific notation)
+np.set_printoptions(suppress=False,formatter={'float_kind':'{:16.5f}'.format},linewidth=130)
+
+neigh = KNeighborsClassifier(n_neighbors=3)
+neigh.fit(x_train,y_train)
+
+y_pred = neigh.predict(x_test)
+
+print("\nLarge Data:\nKNN: Accuracy of the Classifier C = %.3f " % metrics.accuracy_score(y_test, y_pred))
