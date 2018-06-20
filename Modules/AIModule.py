@@ -165,10 +165,10 @@ svc = svm.SVC(kernel='rbf', C=C, decision_function_shape='ovr').fit(x_train, y_t
 Z = svc.predict(x_test)
 
 #Print Accuracy of the Classifier (SVM)
-print("SVM: Accuracy of the Classifier C = %.3f" % metrics.accuracy_score(y_test, Z))
+#print("SVM: Accuracy of the Classifier C = %.3f" % metrics.accuracy_score(y_test, Z))
 
 #Print NAME Error measure (SVM)
-print("SVM: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, Z))
+#print("SVM: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, Z))
 
 
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
@@ -245,7 +245,7 @@ y_pred = neigh.predict(x_test)
 
 np.savetxt('knn.txt', y_pred, delimiter=',')
 
-print("\nLarge Data:\nKNN: Accuracy of the Classifier C = %.3f " % metrics.accuracy_score(y_test, y_pred))
+print("KNN: Accuracy of the Classifier C = %.3f " % metrics.accuracy_score(y_test, y_pred))
 
 #Print NAME Error measure (SVM)
 print("KNN: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, y_pred))
@@ -253,7 +253,7 @@ print("KNN: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, y_pred
 
 
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
-#Tree Decision
+#Decision Tree
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
 
 
@@ -285,4 +285,5 @@ clf_gini = DecisionTreeClassifier(criterion = "gini", random_state = 100, max_de
 clf_gini.fit(x_train, y_train)
 
 y_pred = clf_gini.predict(x_test)
-print("Accuracy is: ", accuracy_score(y_test,y_pred)*100)
+print("Decision Tree: Accuracy is: ", accuracy_score(y_test,y_pred)*100)
+print("Decision Tree: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, y_pred))
