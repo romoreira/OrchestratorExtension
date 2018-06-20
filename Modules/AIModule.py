@@ -21,9 +21,8 @@ from sklearn.cross_validation import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.utils.validation import column_or_1d
 from sklearn import metrics
-
 from sklearn import svm, datasets
-from sklearn.svm.libsvm import decision_function
+
 
 def nmae(y_real, y_predict):
 
@@ -98,7 +97,7 @@ print("The Normalized Mean Absolute Error (Regression Method): %0.4f " % nmae(y_
 
 
 iris = datasets.load_iris()
-#print(iris)
+print(iris)
 X = iris.data[:, :2]
 y = iris.target
 
@@ -131,7 +130,7 @@ print(Z)
 
 #Preparing X and Y to be trained
 df = pd.read_csv('/home/rodrigo/MPLS-TE/Data-Set/cic-unb/test.csv')
-X = df.iloc[:,6:8]
+X = df.iloc[:,8:10]
 y = df.iloc[:,29:30]
 
 
@@ -140,17 +139,19 @@ x_train, x_test, y_train, y_test = train_test_split(X,y, test_size=0.30)
 
 x_train = np.array(x_train)
 y_train = np.array(y_train)
-y_train = column_or_1d(y_train, warn=True)
+y_train = column_or_1d(y_train, warn=False)
 
 print("Comparativo")
-#print(x_train)
+print(X.dtypes)
+np.set_printoptions(suppress=False,formatter={'float_kind':'{:16.5f}'.format},linewidth=130)
+print(np.array(x_train))
 #print(y_train)
 #print(x_train.shape)
 #print(y_train.shape)
 
 # Create the SVC model object
 C = 1.0 # SVM regularization parameter
-svc = svm.SVC(kernel='linear', C=C, decision_function_shape='ovr').fit(x_train, y_train)
+svc = svm.SVC(kernel='rbf', C=C, decision_function_shape='ovr').fit(x_train, y_train)
 
 Z = svc.predict(x_test)
 print("Z Predicted2:")
