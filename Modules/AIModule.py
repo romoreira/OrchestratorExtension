@@ -111,8 +111,11 @@ xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
 
 X_plot = np.c_[xx.ravel(), yy.ravel()]
 
+print(X)
+print(y)
 print(X.shape)
 print(y.shape)
+
 
 # Create the SVC model object
 C = 1.0 # SVM regularization parameter
@@ -128,67 +131,30 @@ print(Z)
 
 #Preparing X and Y to be trained
 df = pd.read_csv('/home/rodrigo/MPLS-TE/Data-Set/cic-unb/test.csv')
-x = df.iloc[:,0:28]
-
-
-#Remove String format from training model
-x = x.iloc[:,x.columns != "Source_IP"]
-x = x.iloc[:,x.columns != "Destination_IP"]
-
-
+X = df.iloc[:,6:8]
 y = df.iloc[:,29:30]
 
-x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.30)
+
+x_train, x_test, y_train, y_test = train_test_split(X,y, test_size=0.30)
 
 
-
-print(x_train.shape)
 x_train = np.array(x_train)
+y_train = np.array(y_train)
+y_train = column_or_1d(y_train, warn=True)
 
-y_train = column_or_1d(y_train, warn=False)
-print(y_train.shape)
+print("Comparativo")
+#print(x_train)
+#print(y_train)
+#print(x_train.shape)
+#print(y_train.shape)
 
 # Create the SVC model object
 C = 1.0 # SVM regularization parameter
 svc = svm.SVC(kernel='linear', C=C, decision_function_shape='ovr').fit(x_train, y_train)
-Z = svc.predict(X_plot)
 
+Z = svc.predict(x_test)
+print("Z Predicted2:")
+print(Z)
 
-#Preparing X and Y to be trained
-df = pd.read_csv('/home/rodrigo/MPLS-TE/Data-Set/cic-unb/merged_5s.csv')
-x = df.iloc[:,0:28]
-
-
-#Remove String format from training model
-x = x.iloc[:,x.columns != "Source_IP"]
-x = x.iloc[:,x.columns != "Destination_IP"]
-
-
-y = df.iloc[:,29:30]
-
-x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.30)
-
-#y_train must be 1d column
-y_train = column_or_1d(y_train, warn=False)
-
-
-#Creating a Regression Object
-C = LogisticRegression()
-
-#Fit Model
-C.fit(x_train,y_train)
-
-#Perform a classification test by using Logistic Regression
-y_pred = C.predict(x_test)
-
-# y_pred_class = pd.DataFrame(y_pred_class)
-print("Accuracy of the Classifier C = %.3f" % metrics.accuracy_score(y_test, y_pred))
-
-#Print Coeficients of Regression
-#print("Coeficients: " + np.array2string(C.coef_))
-
-
-#Regression Method
-print("The Normalized Mean Absolute Error (Regression Method): %0.4f " % nmae(y_test, y_pred))
 
 
