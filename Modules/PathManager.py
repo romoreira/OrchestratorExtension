@@ -321,5 +321,8 @@ class LSP(app_manager.RyuApp):
         self.walk_on_flows(find_dpid, "08:00:27:2c:5c:ff", "08:00:27:0f:df:de",switch_src,switch_dst)
         for path in self.PATHS:
             print("HOST-A VINDO DE: " + str(path.dpid) + " INGRESS: " + str(path.ingress) + " EGRESS: " + str(path.egress))
+        
+        #By considering path list, make OVS QoS command to each Ingress and Egress port
+            
         return "QoS Path Created",201
     
