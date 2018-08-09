@@ -14,7 +14,7 @@
 # limitations under the License.
 
 from ryu.base import app_manager
-from ryu.controller import ofp_event
+from ryu.controller import ofp_event, dpset
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
@@ -96,7 +96,14 @@ class SwitchRuntime(app_manager.RyuApp):
         lsp = PathManager("","","","","")
         print("Tentou chamar pelomenos")
         lsp.update_topology()
-        
+    
+    @set_ev_cls(dpset.EventDP)
+    def switch_desconnected(self, ev):
+        print("Switch Desonectado " + str(ev.dp))
+    
+    @set_ev_cls(dpset.EventPortModify)
+    def switch_port_modify(self, ev):
+        print("Porta Modificada " + str(ev.dp))
         
     @set_ev_cls(event.EventHostAdd)
     def host_connected(self, ev):
