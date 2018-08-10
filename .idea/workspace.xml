@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="17c8eebc-341b-481f-8e23-de8fdd8e0569" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/Modules/PathManager.py" beforeDir="false" afterPath="$PROJECT_DIR$/Modules/PathManager.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Modules/QoSModule.py" beforeDir="false" afterPath="$PROJECT_DIR$/Modules/QoSModule.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -32,8 +31,8 @@
       <file leaf-file-name="PathManager.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Modules/PathManager.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1164">
-              <caret line="103" column="12" lean-forward="true" selection-start-line="103" selection-start-column="12" selection-end-line="103" selection-end-column="12" />
+            <state relative-caret-position="360">
+              <caret line="345" column="8" selection-start-line="345" selection-start-column="8" selection-end-line="345" selection-end-column="8" />
               <folding>
                 <element signature="e#93#109#0" expanded="true" />
               </folding>
@@ -42,6 +41,11 @@
         </entry>
       </file>
     </leaf>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>dp.add</find>
+    </findStrings>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -231,8 +235,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Modules/PathManager.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1164">
-          <caret line="103" column="12" lean-forward="true" selection-start-line="103" selection-start-column="12" selection-end-line="103" selection-end-column="12" />
+        <state relative-caret-position="360">
+          <caret line="345" column="8" selection-start-line="345" selection-start-column="8" selection-end-line="345" selection-end-column="8" />
           <folding>
             <element signature="e#93#109#0" expanded="true" />
           </folding>

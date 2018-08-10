@@ -196,53 +196,62 @@ class LSP(app_manager.RyuApp):
             #print("PER FLOW: "+str(per_flow))
             if len(per_flow) > 2:
                 
-                #Verifica que sossui Flow Match no dpid atual
+                #Verifica que se possui <Flow> match no dpid atual
                 if per_flow['dl_src'] == src_host_mac and per_flow['dl_dst'] == dst_host_mac:
-                    
-                    #PEGO O NUMERO DA INTERFACE QUE O FLOW MANDA SEGUIR
+
+                    #Pego o numero da Interface de <Entrada> do Flow
+                    source_port_number = str(per_flow['in_port'])
+
+                    #Pego o numero da Interface de <Saida> do Flow
                     #print("IR PARA A PROXIMA ENTIDADE QUE TA NA PORTA: "+str(flow['actions']))
                     destination_port_number = str(flow['actions'])
                     destination_port_number = re.findall("\d+", destination_port_number)[0]
                     #print("IR PARA ->: "+str(destination_port_number))
-                    
-                    #CHAMADA DOS DESCRITORES DE PORTA DE CADA SWITCH
+
+                    #Chamada dos descritores de <Porta> de cada Switch
                     rest_link = 'http://10.0.0.100:8080/stats/portdesc/'
                     rest_link = rest_link + str(dpid)
                     port_desc = requests.get(rest_link)
                     port_desc = port_desc.json()
                     port_desc = str(port_desc).replace("'",'"')
                     port_desc = json.loads(port_desc)
-                    
-                    #PEGAR O MAC DA INTERFACE QUE O FLOW MANDA SEGUIR
+
+                    # Pego o MAC da Interface de <Entrada> do Flow
+                    for x in port_desc[str(dpid)]:
+                        if str(x['port_no']) == source_port_number:
+                            source_port_name = str(x['hw_addr'])
+                            break;
+
+
+                    #Pego o MAC da Interface de <Saida> do Flow
                     for x in port_desc[str(dpid)]:
                         if str(x['port_no']) == destination_port_number:
                             destination_port_name = str(x['hw_addr'])
                             break;
-                    
+
+
+
+
                     #print("FLOW MANDA SEGUIR PARA ESSA INTERFACE. MAC: "+str(destination_port_name))
                     
                     
-                    #O DESTINO ESTA NO PROPRIO SWITCH?
+                    #Checa se o <MAC> destino esta no Switch visitado
                     for x in port_desc[str(dpid)]:
-                        #print(" O DESTINO ESTA NO PROPRIO SWTICH? ")
                         destination_port_name = str(x['hw_addr'])
                         if destination_port_name == dst_interface_sw_mac:
-                            #print("SIM O DESTINO ESTA NO SWITCH o/ o/")
-                            path = PATH(src_interface_sw_mac,destination_port_name,dpid)
+                            path = PATH(source_port_name,destination_port_name,dpid)
                             self.PATH.append(path)
-                            #ENCOUNTROU A INTERFACE DO SW DE ULTIMO SALTO PARA O DESTINO
+                            #Encontrou a Interface do SW de ultimo salto que o Host esta conectado
                             return
-                    
-                    #PEGAR DOS LINKS O PROXIMO DATAPATH QUE A INTERFACE DA REGRA MANDA SEGUIR
-                    #print("NAO O DESTINO FINAL NAO ESTA NESSE SWITCH")
-                    #print("CONSIDERANDO A TOPOLOGIA: "+str(self.get_topology()))
+
+                    #Ir para o proximo datapath que o flow mandou seguir
                     links = self.get_topology()
                     i = 0
                     while i < len(links):
                         #print("ONDE ESTOU dpid: "+str(links[i][0]) + " ONDE DEVERIA ESTAR: "+str(dpid) + " IR PARA "+str(links[i][2]) + " POIS: " + str(destination_port_number))
                         if str(links[i][0]) == dpid and str(links[i][2]) == destination_port_number:
                             #print("DEVO SAIR PELA: " + str(links[i][2]))
-                            path = PATH(src_interface_sw_mac,destination_port_name,dpid)
+                            path = PATH(source_port_name,destination_port_name,dpid)
                             self.PATH.append(path)
                             self.walk_on_flows(links[i][1], src_host_mac, dst_host_mac, src_interface_sw_mac, dst_interface_sw_mac)
                             return
@@ -327,27 +336,28 @@ class LSP(app_manager.RyuApp):
         
         self.walk_on_flows(find_dpid, "08:00:27:2c:5c:ff", "08:00:27:0f:df:de",switch_src,switch_dst)
 
-        print("OI: " + str([ob.__dict__ for ob in self.PATH]))
+        #print("OI: " + str([ob.__dict__ for ob in self.PATH]))
         for path in self.PATH:
             print("HOST-A VINDO DE: " + str(path.dpid) + " INGRESS: " + str(path.ingress) + " EGRESS: " + str(path.egress))
 
 
 
         #By considering path list, make OVS QoS command to each Ingress and Egress port
-        self.apply_rules_on_switches(self.PATH)
+        self.apply_rules_on_switches(self.PATH,self.required_bandwidth)
 
         return "QoS Path Created",self.PATH,201
 
-    def run_ssh_command(self,HOST,COMMAND):
+    def run_ssh_command(self,HOST, ingress, egress, bandwidth):
+        print("OLA MUNDO: "+str(ingress) + "  " + str(egress) + " " + str(bandwidth))
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(HOST, username='rodrigo', password='lisa')
-        stdin, stdout, stderr = client.exec_command(COMMAND)
+        stdin, stdout, stderr = client.exec_command("ls")#OvS QoS here!
         for line in stdout:
             print(str(line.strip('\n')))
         client.close()
 
-    def apply_rules_on_switches(self,PATH):
+    def apply_rules_on_switches(self,PATH,bandwidth):
          
         print("Aplying rules on Switches...")
          
@@ -357,7 +367,8 @@ class LSP(app_manager.RyuApp):
         for path in PATH:
             for switch in switch_list:
                 if str(path.dpid) == str(switch.dp.id):
-                    self.run_ssh_command(str(switch.dp.address[0]), "")
+                    self.run_ssh_command(str(switch.dp.address[0]), path.ingress, path.egress,bandwidth)
+
         
         
         
