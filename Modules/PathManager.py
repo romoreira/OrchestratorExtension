@@ -203,7 +203,6 @@ class LSP(app_manager.RyuApp):
                     source_port_number = str(per_flow['in_port'])
 
                     #Pego o numero da Interface de <Saida> do Flow
-                    #print("IR PARA A PROXIMA ENTIDADE QUE TA NA PORTA: "+str(flow['actions']))
                     destination_port_number = str(flow['actions'])
                     destination_port_number = re.findall("\d+", destination_port_number)[0]
                     #print("IR PARA ->: "+str(destination_port_number))
@@ -216,7 +215,7 @@ class LSP(app_manager.RyuApp):
                     port_desc = str(port_desc).replace("'",'"')
                     port_desc = json.loads(port_desc)
 
-                    # Pego o MAC da Interface de <Entrada> do Flow
+                    #Pego o MAC da Interface de <Entrada> do Flow
                     for x in port_desc[str(dpid)]:
                         if str(x['port_no']) == source_port_number:
                             source_port_name = str(x['hw_addr'])
@@ -229,12 +228,6 @@ class LSP(app_manager.RyuApp):
                             destination_port_name = str(x['hw_addr'])
                             break;
 
-
-
-
-                    #print("FLOW MANDA SEGUIR PARA ESSA INTERFACE. MAC: "+str(destination_port_name))
-                    
-                    
                     #Checa se o <MAC> destino esta no Switch visitado
                     for x in port_desc[str(dpid)]:
                         destination_port_name = str(x['hw_addr'])
@@ -248,9 +241,7 @@ class LSP(app_manager.RyuApp):
                     links = self.get_topology()
                     i = 0
                     while i < len(links):
-                        #print("ONDE ESTOU dpid: "+str(links[i][0]) + " ONDE DEVERIA ESTAR: "+str(dpid) + " IR PARA "+str(links[i][2]) + " POIS: " + str(destination_port_number))
                         if str(links[i][0]) == dpid and str(links[i][2]) == destination_port_number:
-                            #print("DEVO SAIR PELA: " + str(links[i][2]))
                             path = PATH(source_port_name,destination_port_name,dpid)
                             self.PATH.append(path)
                             self.walk_on_flows(links[i][1], src_host_mac, dst_host_mac, src_interface_sw_mac, dst_interface_sw_mac)
@@ -336,7 +327,7 @@ class LSP(app_manager.RyuApp):
         
         self.walk_on_flows(find_dpid, "08:00:27:2c:5c:ff", "08:00:27:0f:df:de",switch_src,switch_dst)
 
-        #print("OI: " + str([ob.__dict__ for ob in self.PATH]))
+        #[ob.__dict__ for ob in self.PATH]))
         for path in self.PATH:
             print("HOST-A VINDO DE: " + str(path.dpid) + " INGRESS: " + str(path.ingress) + " EGRESS: " + str(path.egress))
 
