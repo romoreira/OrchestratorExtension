@@ -5,18 +5,17 @@ Created on Aug 6, 2018
 '''
 
 #Class imports - QoS Enforcement Rest API
-from flask import Flask, request, abort
-from flask_restful import Api, Resource, reqparse
 import threading
 import json
 import requests
 import re
+import paramiko
 
+from flask import Flask, request, abort
 from ryu.base import app_manager
-from ryu.topology import event, switches
 from ryu.topology.api import get_switch, get_link, get_host
-from ryu.controller import dpset
-from wheel import paths
+
+
 
 
 #class Flow(ControllerBase):
@@ -36,7 +35,7 @@ from wheel import paths
 #        if dp is None:
 #            print("No SUCH DATAPATH WITH ITS ID")
     
-class QoS(threading.Thread):
+class QoSAPI(threading.Thread):
 
     app = Flask(__name__)
     app.config["DEBUG"] = True
@@ -58,7 +57,7 @@ class QoS(threading.Thread):
         '''
         Given QoS Mechanism Status - BAM, RDM and Others
         '''
-        return json.dumps({QoS.BANDWIDTH_SCHEME: QoS.QoS_ENABLED}, sort_keys=True, indent=4)
+        return json.dumps({QoSAPI.BANDWIDTH_SCHEME: QoSAPI.QoS_ENABLED}, sort_keys=True, indent=4)
 
 
     @app.route("/qos/switch_ip/<string:find_dpid>",methods=['GET'])
@@ -95,7 +94,7 @@ class QoS(threading.Thread):
         
         #Perform verifications before create QoS PATH
         if not request.json or not 'ip_src' in request.json or not 'ip_dst' in request.json or not 'required_bandwidth' in request.json or not 'reservation_mode' in request.json:
-            return json.dumps({'ip_src': "IP", 'ip_dst': "IP",'required_bandwidth': 10, 'reservation_mode': "MAM"}, sort_keys=True, indent=4)
+            return json.dumps({'ip_src': "IP", 'ip_dst': "IP",'required_bandwidth': 10, 'reservation_mode': "<MAM,RDM,Other>"}, sort_keys=True, indent=4)
             abort(400)
         else:
             ip_src = request.json['ip_src']
@@ -114,7 +113,16 @@ class QoS(threading.Thread):
                 
         #Create LSP to perform QoS policies
         lsp = LSP(ip_src, ip_dst, required_bandwidth, reservation_mode)
-        return json.dumps({"":lsp.perform_qos()}),501
+        msg, PATH, code = lsp.perform_qos()
+
+        #Path successfully created
+        if int(code) == 201:
+            return json.dumps({reservation_mode: "Success", "Requirement":request.json,"QoSPATH": str([ob.__dict__ for ob in PATH])}),201
+        #Path unsuccessfully created
+        else:
+            if int(code) == 501:
+                return json.dumps({reservation_mode: "Fail", "Requirement":request.json}),501
+
 
 class PATH(app_manager.RyuApp):
     
@@ -129,7 +137,7 @@ class LSP(app_manager.RyuApp):
     Label-Switched Path (LSP) - Specifies the <Path> with QoS metrics
     '''
       
-    PATHS = []   
+    PATH = []   
         
     def __init__(self, ip_src, ip_dst, required_bandwidth, reservation_mode):
         '''
@@ -221,7 +229,7 @@ class LSP(app_manager.RyuApp):
                         if destination_port_name == dst_interface_sw_mac:
                             #print("SIM O DESTINO ESTA NO SWITCH o/ o/")
                             path = PATH(src_interface_sw_mac,destination_port_name,dpid)
-                            self.PATHS.append(path)
+                            self.PATH.append(path)
                             #ENCOUNTROU A INTERFACE DO SW DE ULTIMO SALTO PARA O DESTINO
                             return
                     
@@ -235,7 +243,7 @@ class LSP(app_manager.RyuApp):
                         if str(links[i][0]) == dpid and str(links[i][2]) == destination_port_number:
                             #print("DEVO SAIR PELA: " + str(links[i][2]))
                             path = PATH(src_interface_sw_mac,destination_port_name,dpid)
-                            self.PATHS.append(path)
+                            self.PATH.append(path)
                             self.walk_on_flows(links[i][1], src_host_mac, dst_host_mac, src_interface_sw_mac, dst_interface_sw_mac)
                             return
                         i = i + 1
@@ -254,7 +262,7 @@ class LSP(app_manager.RyuApp):
         
         if len(host_list) == 0:
             print("Topology has not any Hosts")
-            return 501,"Topology has not any Hosts"
+            return "Topology has not any Hosts",None,501
                         
         #Source Information
         for host in host_list:
@@ -317,12 +325,73 @@ class LSP(app_manager.RyuApp):
         #DST - NUMERO DA PORTA QUE O DST TA CONECTADO: 2
         #DST - MAC DO PORTA DO SWITCH QUE O HOST DST TA CONECTADO: 00:e0:7d:db:18:d4
         
-        print("DATAPATH ID QUE O HOST SOURCE ESTA CONECTADO: "+ find_dpid)
         self.walk_on_flows(find_dpid, "08:00:27:2c:5c:ff", "08:00:27:0f:df:de",switch_src,switch_dst)
-        for path in self.PATHS:
+
+        print("OI: " + str([ob.__dict__ for ob in self.PATH]))
+        for path in self.PATH:
             print("HOST-A VINDO DE: " + str(path.dpid) + " INGRESS: " + str(path.ingress) + " EGRESS: " + str(path.egress))
-        
+
+
+
         #By considering path list, make OVS QoS command to each Ingress and Egress port
-            
-        return "QoS Path Created",201
+        self.apply_rules_on_switches(self.PATH)
+
+        return "QoS Path Created",self.PATH,201
+
+    def run_ssh_command(self,HOST,COMMAND):
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        client.connect(HOST, username='rodrigo', password='lisa')
+        stdin, stdout, stderr = client.exec_command(COMMAND)
+        for line in stdout:
+            print(str(line.strip('\n')))
+        client.close()
+
+    def apply_rules_on_switches(self,PATH):
+         
+        print("Aplying rules on Switches...")
+         
+        #Create LSP object to retrieve swtiches
+        switch_list = self.get_switches()
+        switch_ip = ""
+        for path in PATH:
+            for switch in switch_list:
+                if str(path.dpid) == str(switch.dp.id):
+                    self.run_ssh_command(str(switch.dp.address[0]), "")
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
     

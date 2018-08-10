@@ -24,7 +24,7 @@ from ryu.lib.packet import ether_types
 
 #Class imports - Made by me
 from ryu.app.rest_topology import TopologyController
-from PathManager import QoS
+from PathManager import QoSAPI
 from ryu.topology import event, switches
 from ryu.topology.api import get_switch, get_link, get_host
 
@@ -36,7 +36,7 @@ class SwitchRuntime(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(SwitchRuntime, self).__init__(*args, **kwargs)
         self.mac_to_port = {}
-        qos_listener = QoS(1,self)
+        qos_listener = QoSAPI(1,self)
         qos_listener.setName("Thread1")
         qos_listener.start()
         
