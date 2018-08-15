@@ -14,7 +14,7 @@ Created on Jun 18, 2018
 #7 - VIDEO
 #8 - VOIP
 
-
+import socket
 import pandas as pd
 import numpy as np
 from sklearn.cross_validation import train_test_split
@@ -26,7 +26,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 
-
+  
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
 #Functions - NMAE
 #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
@@ -287,3 +287,14 @@ clf_gini.fit(x_train, y_train)
 y_pred = clf_gini.predict(x_test)
 print("Decision Tree: Accuracy is: ", accuracy_score(y_test,y_pred)*100)
 print("Decision Tree: Normalized Mean Absolute Error (NMAE): %0.4f " % nmae(y_test, y_pred))
+
+
+UDP_IP = "10.0.0.100"
+UDP_PORT = 8083
+    
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind((UDP_IP, UDP_PORT))
+print("Waiting for questions")
+while True:
+    data, address = sock.recvfrom(1024)
+    print("AI SOCKET RECEBEU ALGO: "+str(data) + " FROM: "+str(address))
