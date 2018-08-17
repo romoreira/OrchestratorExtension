@@ -14,27 +14,9 @@ import paramiko
 from flask import Flask, request, abort
 from ryu.base import app_manager
 from ryu.topology.api import get_switch, get_link, get_host
+from bokeh.models.annotations import Band
 
-
-
-
-#class Flow(ControllerBase):
-#    
-#    _CONTEXTS = {
-#        'dpset': dpset.DPSet
-#    }
-#    
-#    def __init__(self, *args, **kwargs):
-#        super(Flow, self).__init__(*args, **kwargs)
-#        self.dpset = ['dpset']
-#        print("Construtor")
-
-#    def _my_handler(self):
-#        dpid = 1
-#        dp = self.dpset.get(dpid)
-#        if dp is None:
-#            print("No SUCH DATAPATH WITH ITS ID")
-    
+   
 class QoSAPI(threading.Thread):
 
     app = Flask(__name__)
@@ -190,10 +172,11 @@ class LSP(app_manager.RyuApp):
         flows = flows.json()
         flows = str(flows).replace("'",'"')
         flows = json.loads(flows)
-        
+        print("Flows: "+str(flows))
         for flow in flows[str(dpid)]:
             per_flow = flow['match']
-            #print("PER FLOW: "+str(per_flow))
+            print("PER FLOW: "+str(per_flow))
+            print("Tamanho: "+str(len(per_flow)))
             if len(per_flow) > 2:
                 
                 #Verifica que se possui <Flow> match no dpid atual
@@ -249,10 +232,12 @@ class LSP(app_manager.RyuApp):
                         i = i + 1
                     
                 #Nao possui flow match no dpid atual e outros flows mandaram o buscador pra ca, portando o caminho nao existe
-                else:
-                    print("Destination Unreachable - <Host-B> from <Host-A>")
-                    return
+                #else:
+                #    print("Destination Unreachable - <Host-B> from <Host-A>")
+                #    return
                 
+        print("Destination Unreachable - <Host-B> from <Host-A>")
+        
                 
     def perform_qos(self):
         
@@ -325,7 +310,7 @@ class LSP(app_manager.RyuApp):
         #DST - NUMERO DA PORTA QUE O DST TA CONECTADO: 2
         #DST - MAC DO PORTA DO SWITCH QUE O HOST DST TA CONECTADO: 00:e0:7d:db:18:d4
         
-        self.walk_on_flows(find_dpid, "08:00:27:2c:5c:ff", "08:00:27:0f:df:de",switch_src,switch_dst)
+        self.walk_on_flows(find_dpid, "08:00:27:2c:5c:ff", "08:00:27:0d:2e:eb",switch_src,switch_dst)
 
         #[ob.__dict__ for ob in self.PATH]))
         for path in self.PATH:
@@ -339,11 +324,13 @@ class LSP(app_manager.RyuApp):
         return "QoS Path Created",self.PATH,201
 
     def run_ssh_command(self,HOST, ingress, egress, bandwidth):
-        print("OLA MUNDO: "+str(ingress) + "  " + str(egress) + " " + str(bandwidth))
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(HOST, username='rodrigo', password='lisa')
-        stdin, stdout, stderr = client.exec_command("ls")#OvS QoS here!
+        if(str(HOST) == "10.0.0.30"):
+            return
+        stdin, stdout, stderr = client.exec_command("ovs-vsctl set interface "+str(ingress)+" ingress_policing_rate="+str(bandwidth))#OvS QoS here!
+        print("Aplicar QoS no switch: "+str(HOST) + " Ingress: "+str(ingress) + " Egress: "+str(egress) + " Bandwitdh: " + str(bandwidth))
         for line in stdout:
             print(str(line.strip('\n')))
         client.close()
