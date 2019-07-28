@@ -2,7 +2,7 @@
 1. This is an extended version of Orchestrator with traffic engineering implementations for multimedia applications over SDN networks.
 rodrigo [dot] moreira [at] ufu.br
 
-*This extension assumes that Orchestrator Core available in (https://github.com/romoreira/OrchestratorCore) is running previously.
+  1. This extension assumes that Orchestrator Core available in [here](https://github.com/romoreira/OrchestratorCore) is running previously.
 
 * Reference to  this  paper  should  be  made  as  follows:
 
