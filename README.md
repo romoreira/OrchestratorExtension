@@ -1,8 +1,8 @@
 # Orchestrator Extension
-This is an extended version of Orchestrator with traffic engineering implementations for multimedia applications over SDN networks.
+1. This is an extended version of Orchestrator with traffic engineering implementations for multimedia applications over SDN networks.
 rodrigo [dot] moreira [at] ufu.br
 
-** this extension assumes that Orchestrator Core available in (https://github.com/romoreira/OrchestratorCore) is running previously.
+*This extension assumes that Orchestrator Core available in (https://github.com/romoreira/OrchestratorCore) is running previously.
 
 * Reference to  this  paper  should  be  made  as  follows:
 
