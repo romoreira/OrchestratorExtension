@@ -17,7 +17,7 @@ Created on Jun 18, 2018
 from sklearn.metrics import classification_report
 import pandas as pd
 import numpy as np
-from sklearn.cross_validation import train_test_split
+from sklearn.cross_validation import train_test_split, cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.utils.validation import column_or_1d
 from sklearn import metrics
@@ -25,6 +25,10 @@ from sklearn import svm, datasets
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.cross_validation import KFold
+from sklearn.feature_selection import SelectKBest
+from sklearn.ensemble import ExtraTreesClassifier
+
 
 #Class imports - QoS Enforcement Rest API
 import threading
@@ -33,6 +37,7 @@ import requests
 import re
 import paramiko
 from flask import Flask, request, abort
+from zmq.tests import test_includes
 
 class AiCore():
     
@@ -153,38 +158,8 @@ class AiCore():
     #KNN
     #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
     
-    def knn_classifier(self):
-        
-    
-        #Preparing X and Y to be trained - 
-        df = pd.read_csv('/home/rodrigo/MPLS-TE/Data-Set/cic-unb/ds_80_features.csv')
-        x = df.iloc[:,0:84]
-      
-        #Remove String format from training model
-        x = x.iloc[:,x.columns != "Src IP"]
-        x = x.iloc[:,x.columns != "Dst IP"]
-        x = x.iloc[:,x.columns != "Timestamp"]
-        x = x.iloc[:,x.columns != "Flow ID"]
-        x = x.iloc[:,x.columns != "Label"]#Remove the target columns
-        
-        
-        #To catch target (class of network traffic)
-        y = df.iloc[:,83:84]
-        
-        #Data-set train test split
-        x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.20)
-  
-        #Conversion into numpy array
-        x_train = np.array(x_train)
-        y_train = np.array(y_train)
-        #y_test = np.array(y_test)
-        y_train = column_or_1d(y_train, warn=False)
-        
-        
-        #Adjustments in numpy to keep big number format (without scientific notation)
-        np.set_printoptions(suppress=False,formatter={'float_kind':'{:16.5f}'.format},linewidth=130)
-        
-        neigh = KNeighborsClassifier(n_neighbors=6)
+    def knn_fit(self, x_train, y_train, x_test, y_test):
+        neigh = KNeighborsClassifier(n_neighbors=5)
         neigh.fit(x_train,y_train)
         
         y_pred = neigh.predict(x_test)
@@ -195,9 +170,147 @@ class AiCore():
         print("KNN: Accuracy of the Classifier C = %.3f " % metrics.accuracy_score(y_test, y_pred))
         print(classification_report(y_test, y_pred))
         
+        self.confusion_matrix(y_test, y_pred)
+        
+        
+        
         #Print NAME Error measure (KNN)
         #print("KNN: Normalized Mean Absolute Error (NMAE): %0.4f " % self.nmae(y_test, y_pred))
         return neigh
+    
+    def confusion_matrix(self, y_test,y_pred):
+        print(metrics.confusion_matrix(y_test, y_pred))
+        TN_VOIP, FP_VOIP, FN_VOIP, TP_VOIP, TN_NETFLIX, FP_NETFLIX, FN_NETFLIX, TP_NETFLIX, TN_CS, FP_CS, FN_CS, TP_CS, TN_TELNET, FP_TELNET, FN_TELNET, TP_TELNET = metrics.confusion_matrix(y_test, y_pred).ravel()
+        
+        print("TN: %d" % TN_VOIP)
+        print("FP: %d" % FP_VOIP)
+        print("FN: %d" % FN_VOIP)
+        print("TP: %d" % TP_VOIP)
+        
+    
+    def tree_fit(self,x_train, y_train, x_test, y_test):
+        clf_gini = DecisionTreeClassifier(criterion = "gini", random_state = 100, max_depth=3, min_samples_leaf=5)
+        clf_gini.fit(x_train, y_train)
+        y_pred = clf_gini.predict(x_test)
+        print("\nDecision Tree: Accuracy of the Classifier C is: %.3f " % metrics.accuracy_score(y_test,y_pred))
+        print(classification_report(y_test, y_pred))
+
+    def svm_fit(self,x_train, y_train, x_test, y_test):
+        clf = svm.SVC(kernel='rbf')
+        clf.fit(x_train, y_train)
+        y_pred = clf.predict(x_test)
+        print("\nSVM: Accuracy of the Classifier C is: %.3f " % metrics.accuracy_score(y_test,y_pred))
+        print(classification_report(y_test, y_pred))
+        
+    def k_fold(self, X, y):
+        X = np.array(X)
+        y = np.array(y)
+        kf = KFold(3, True, 1)
+        
+        data = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+        
+        for train_indices, test_indices in kf.split(data):
+            print('Train: %s | test: %s' % (train_indices, test_indices))
+        
+        #for iteration, data in enumerate(kf, start=1):
+        #    print('{!s:^9} {}'.format(iteration, data[0], data[1]))
+        
+        
+    def classifiers(self):
+        
+    
+        #Preparing X and Y to be trained - 
+        #df = pd.read_csv('/home/rodrigo/MPLS-TE/Data-Set/cic-unb/ds_80_features.csv')
+        df = pd.read_csv('/home/rodrigo/MPLS-TE/Data-Set/IJUGC/Traffic_Merge.csv', sep=';')
+        x = df.iloc[:,0:84]
+
+        #Remove String format from training model
+        x = x.iloc[:,x.columns != "Src IP"]
+        x = x.iloc[:,x.columns != "Dst IP"]
+        x = x.iloc[:,x.columns != "Timestamp"]
+        x = x.iloc[:,x.columns != "Flow ID"]
+        x = x.iloc[:,x.columns != "Label"]#Remove the target columns
+        
+        #To catch target (class of network traffic)
+        y = df.iloc[:,83:84]
+        
+        #Data-set train test split
+        x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.30)
+  
+        #Conversion into numpy array
+        x_train = np.array(x_train)
+        y_train = np.array(y_train)
+        #y_test = np.array(y_test)
+        y_train = column_or_1d(y_train, warn=False)
+        
+        
+        
+        #Adjustments in numpy to keep big number format (without scientific notation)
+        np.set_printoptions(suppress=False,formatter={'float_kind':'{:16.5f}'.format},linewidth=130)
+        
+        self.knn_fit(x_train, y_train, x_test, y_test)
+        self.tree_fit(x_train, y_train, x_test, y_test)
+        
+        #---KNN---#
+        x = np.array(x)
+        y = np.array(y)
+        print(x.shape)
+        neigh = KNeighborsClassifier(n_neighbors=5)
+        kf = KFold(len(y), n_folds=10)
+        scores = []
+        for train_index, test_index in kf:
+            #print("Train: ",train_index, " Test: ", test_index)
+            x_train, x_test = x[train_index], x[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            neigh.fit(x_train, y_train)
+            y_pred = neigh.predict(x_test)
+            score = accuracy_score(y_test, y_pred)
+            print("Score: ",score)
+            scores.append(score)
+        
+        
+        print("Media: ",sum(scores)/len(scores)*100)
+        
+        
+        #---DecisionTree---#
+        score = 0
+        clf_gini = DecisionTreeClassifier(criterion = "gini", random_state = 100, max_depth=3, min_samples_leaf=5)
+        kf = KFold(len(y), n_folds=10)
+        scores = []
+        for train_index, test_index in kf:
+            #print("Train: ",train_index, " Test: ", test_index)
+            x_train, x_test = x[train_index], x[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+            clf_gini.fit(x_train, y_train)
+
+            y_pred = clf_gini.predict(x_test)
+            score = accuracy_score(y_test, y_pred)
+            print("Decision Tree-Score: ",score)
+            scores.append(score)
+        
+        
+        
+        print("DecisionTree Media: ",sum(scores)/len(scores)*100)
+        
+        
+        #self.k_fold(x,y)
+        #self.svm_fit(x_train, y_train, x_test, y_test)
+        
+        
+        #neigh = KNeighborsClassifier(n_neighbors=5) - experiment
+        #neigh.fit(x_train,y_train - Experiment
+        
+        #y_pred = neigh.predict(x_test) - Experiment
+        
+       
+        #np.savetxt('knn.txt', y_pred, delimiter=',')
+        
+        #print("KNN: Accuracy of the Classifier C = %.3f " % metrics.accuracy_score(y_test, y_pred)) - Experimet
+        #print(classification_report(y_test, y_pred)) - Experiment
+        
+        #Print NAME Error measure (KNN)
+        #print("KNN: Normalized Mean Absolute Error (NMAE): %0.4f " % self.nmae(y_test, y_pred))
+        #return neigh - Experiment
     
     
     #-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#-------------#
@@ -320,52 +433,9 @@ class AiRuntime():
 
    
 if __name__ == "__main__":
-    web_service = AiRuntime()
-#     ai_core = AiCore()
-#     KNN = ai_core.knn_classifier()
-#     
-#     l = "19-2.168.0.1-192.168.0.2-0-0-0,192.168.0.2,0,192.168.0.1,0,0,16/08/201806:00:27PM,9047411,9,11,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2.2105771474292477,476179.52631578955,515372.58549652627,1023388.0,206.0,8023380.0,1002922.5,4874.462754279408,1014972.0,1000854.0,9047411.0,904741.1,317917.0891325983,1023666.0,206.0,0,0,0,0,0,0,0.9947597163431615,1.2158174310860863,0.0,0.0,0.0,0.0,0.0,0,0,0,0,0,0,0,0,1.0,0.0,0.0,0.0,0,0,0,0,0,0,9,0,11,0,-1,-1,0,0,0,0,0,0,0,0,0,0,NoLabel"
-#     mylist = [l]
-#     df = pd.DataFrame([sub.split(",") for sub in mylist],columns=['Flow ID', 'Src IP', 'Src Port', 'Dst IP', 'Dst Port', 'Protocol',
-#        'Timestamp', 'Flow Duration', 'Tot Fwd Pkts', 'Tot Bwd Pkts',
-#        'TotLen Fwd Pkts', 'TotLen Bwd Pkts', 'Fwd Pkt Len Max',
-#        'Fwd Pkt Len Min', 'Fwd Pkt Len Mean', 'Fwd Pkt Len Std',
-#        'Bwd Pkt Len Max', 'Bwd Pkt Len Min', 'Bwd Pkt Len Mean',
-#        'Bwd Pkt Len Std', 'Flow Byts/s', 'Flow Pkts/s', 'Flow IAT Mean',
-#        'Flow IAT Std', 'Flow IAT Max', 'Flow IAT Min', 'Fwd IAT Tot',
-#        'Fwd IAT Mean', 'Fwd IAT Std', 'Fwd IAT Max', 'Fwd IAT Min',
-#        'Bwd IAT Tot', 'Bwd IAT Mean', 'Bwd IAT Std', 'Bwd IAT Max',
-#        'Bwd IAT Min', 'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags',
-#        'Bwd URG Flags', 'Fwd Header Len', 'Bwd Header Len', 'Fwd Pkts/s',
-#        'Bwd Pkts/s', 'Pkt Len Min', 'Pkt Len Max', 'Pkt Len Mean',
-#        'Pkt Len Std', 'Pkt Len Var', 'FIN Flag Cnt', 'SYN Flag Cnt',
-#        'RST Flag Cnt', 'PSH Flag Cnt', 'ACK Flag Cnt', 'URG Flag Cnt',
-#        'CWE Flag Count', 'ECE Flag Cnt', 'Down/Up Ratio', 'Pkt Size Avg',
-#        'Fwd Seg Size Avg', 'Bwd Seg Size Avg', 'Fwd Byts/b Avg',
-#        'Fwd Pkts/b Avg', 'Fwd Blk Rate Avg', 'Bwd Byts/b Avg',
-#        'Bwd Pkts/b Avg', 'Bwd Blk Rate Avg', 'Subflow Fwd Pkts',
-#        'Subflow Fwd Byts', 'Subflow Bwd Pkts', 'Subflow Bwd Byts',
-#        'Init Fwd Win Byts', 'Init Bwd Win Byts', 'Fwd Act Data Pkts',
-#        'Fwd Seg Size Min', 'Active Mean', 'Active Std', 'Active Max',
-#        'Active Min', 'Idle Mean', 'Idle Std', 'Idle Max', 'Idle Min', 'Label'])
-#     
-#     x = df.iloc[:,0:84]
-#       
-#     #Remove String format from training model
-#     x = x.iloc[:,x.columns != "Src IP"]
-#     x = x.iloc[:,x.columns != "Dst IP"]
-#     x = x.iloc[:,x.columns != "Timestamp"]
-#     x = x.iloc[:,x.columns != "Flow ID"]
-#     x = x.iloc[:,x.columns != "Label"]#Remove the target columns
-#     
-# 
-#     print(x)
-#     predicao = KNN.predict(x)
-#     print(predicao[0])
-
-
-
-
+#    web_service = AiRuntime()
+     ai_core = AiCore()
+     KNN = ai_core.classifiers()
 
 
 
